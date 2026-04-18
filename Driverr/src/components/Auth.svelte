@@ -1,6 +1,6 @@
 <script lang="ts">
   import { currentView, phoneNumber, fetchProfile, driverProfile, isAuthenticated, navigate } from '../stores/appStore';
-  import { authApi, setToken } from '../lib/api';
+  import { authApi, accountApi, setToken } from '../lib/api';
   import { onMount } from 'svelte';
   
   let tempPhone = '';
@@ -13,12 +13,29 @@
   
   // Registration data
   let driverName = '';
+  let driverCompanyId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+  let driverCarModel = '';
+  let driverCarBrand = '';
+  let driverCarLicensePlate = '';
 
   async function sendCode() {
     if (tempPhone.length >= 7) {
       isLoading = true;
       errorMessage = '';
-      $phoneNumber = `${countryCode}${tempPhone}`;
+      
+      // Sanitize: remove non-digits
+      let cleanDigits = tempPhone.replace(/\D/g, '');
+      
+      // If it starts with 964, remove it
+      if (cleanDigits.startsWith('964')) {
+        cleanDigits = cleanDigits.substring(3);
+      }
+      // If it starts with 0, remove it (common in local dialing)
+      else if (cleanDigits.startsWith('0')) {
+        cleanDigits = cleanDigits.substring(1);
+      }
+      
+      $phoneNumber = `${countryCode}${cleanDigits}`;
       
       try {
         await authApi.requestOtp($phoneNumber);
@@ -59,34 +76,42 @@
     }
   }
 
+  function isRegistrationValid() {
+    return (
+      driverName.trim().length >= 3 &&
+      driverCompanyId.trim().length >= 5 &&
+      driverCarModel.trim().length >= 1 &&
+      driverCarBrand.trim().length >= 1 &&
+      driverCarLicensePlate.trim().length >= 2
+    );
+  }
+
   async function completeRegistration() {
-    if (driverName.trim().length >= 3) {
-      isLoading = true;
-      try {
-        // Calling the endpoint that the backend developer will implement
-        const res = await authApi.register({
-          name: driverName,
-          phoneNumber: $phoneNumber
-        });
+    if (!isRegistrationValid()) {
+      errorMessage = 'يرجى تعبئة جميع الحقول بشكل صحيح';
+      return;
+    }
+    isLoading = true;
+    errorMessage = '';
+    try {
+      await accountApi.createDriver({
+        name: driverName.trim(),
+        phoneNumber: $phoneNumber,
+        companyId: driverCompanyId.trim(),
+        carModel: driverCarModel.trim(),
+        carBrand: driverCarBrand.trim(),
+        carLicensePlate: driverCarLicensePlate.trim(),
+      });
 
-        // In case register returns a token, update it
-        const token = res.token || res.data?.token;
-        if (token) {
-          setToken(token);
-        }
-
-        // Fetch the fresh profile to confirm successful registration
-        await fetchProfile();
-        
-        $isAuthenticated = true;
-        $currentView = 'offers';
-      } catch (err: any) {
-        errorMessage = err.message || 'تعذر استكمال التسجيل';
-      } finally {
-        isLoading = false;
-      }
-    } else {
-      errorMessage = 'يرجى إدخال اسمك الحقيقي';
+      // Fetch the fresh profile to confirm successful registration
+      await fetchProfile();
+      
+      $isAuthenticated = true;
+      $currentView = 'offers';
+    } catch (err: any) {
+      errorMessage = err.message || 'تعذر استكمال التسجيل';
+    } finally {
+      isLoading = false;
     }
   }
   
@@ -205,32 +230,30 @@
 
   {:else if $currentView === 'register'}
     <!-- New Driver Registration -->
-    <div class="auth-header">
+    <div class="auth-header" style="margin-bottom: var(--spacing-5);">
       <div class="logo-placeholder">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
       </div>
-      <h1>إكمال الملف الشخصي</h1>
-      <p>يرجى إدخال اسمك الكامل لبدء استلام الطلبات</p>
+      <h1>تسجيل بيانات السائق</h1>
+      <p>أكمل ملفك الشخصي لبدء استلام الطلبات</p>
     </div>
 
-    <div class="form-group">
-      <label for="driverName">الاسم الكامل</label>
-      <input 
-        id="driverName"
-        type="text" 
-        bind:value={driverName}
-        placeholder="مثال: محمد علي"
-        class="input-field"
-      />
-      {#if errorMessage}
-        <p class="error-msg">{errorMessage}</p>
-      {/if}
-    </div>
-
-    <div class="form-group">
-        <label for="driverPhone">رقم الهاتف</label>
+    <div class="register-form">
+      <div class="form-group">
+        <label for="regName">الاسم الكامل</label>
         <input 
-          id="driverPhone"
+          id="regName"
+          type="text" 
+          bind:value={driverName}
+          placeholder="مثال: محمد علي"
+          class="input-field"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="regPhone">رقم الهاتف</label>
+        <input 
+          id="regPhone"
           type="text" 
           value={$phoneNumber}
           disabled
@@ -239,8 +262,60 @@
         />
       </div>
 
+      <div class="form-group">
+        <label for="regCompanyId">معرّف الشركة (Company ID)</label>
+        <input 
+          id="regCompanyId"
+          type="text"
+          dir="ltr"
+          bind:value={driverCompanyId}
+          placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          class="input-field"
+        />
+      </div>
+
+      <div class="reg-row">
+        <div class="form-group">
+          <label for="regCarBrand">ماركة السيارة</label>
+          <input 
+            id="regCarBrand"
+            type="text"
+            bind:value={driverCarBrand}
+            placeholder="مثال: Toyota"
+            class="input-field"
+          />
+        </div>
+        <div class="form-group">
+          <label for="regCarModel">موديل السيارة</label>
+          <input 
+            id="regCarModel"
+            type="text"
+            bind:value={driverCarModel}
+            placeholder="مثال: Camry"
+            class="input-field"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regPlate">رقم اللوحة</label>
+        <input 
+          id="regPlate"
+          type="text"
+          dir="ltr"
+          bind:value={driverCarLicensePlate}
+          placeholder="مثال: 12 A 34567"
+          class="input-field"
+        />
+      </div>
+
+      {#if errorMessage}
+        <p class="error-msg" style="text-align: center;">{errorMessage}</p>
+      {/if}
+    </div>
+
     <div class="action-footer">
-      <button class="btn btn-primary" on:click={completeRegistration} disabled={driverName.length < 3 || isLoading}>
+      <button class="btn btn-primary" on:click={completeRegistration} disabled={!isRegistrationValid() || isLoading}>
         {isLoading ? 'جاري الحفظ...' : 'ابدأ العمل الآن'}
         {#if !isLoading}
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -469,5 +544,17 @@
     font-family: var(--font-family);
     padding: 0;
     margin: 0 2px;
+  }
+
+  .register-form {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: var(--spacing-3);
+  }
+
+  .reg-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3);
   }
 </style>

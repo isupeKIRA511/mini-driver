@@ -4,9 +4,9 @@ import { accountApi } from '../lib/api';
 export type AppView = 'auth' | 'otp' | 'register' | 'offers' | 'create_offer' | 'requests' | 'active_trip' | 'profile';
 
 // Navigation history stack for back button
-export const navHistory = writable<AppView[]>(['offers']);
+export const navHistory = writable<AppView[]>(['auth']);
 
-export const currentView = writable<AppView>('offers');
+export const currentView = writable<AppView>('auth');
 export const phoneNumber = writable<string>('');
 
 // Navigate with history tracking
@@ -26,16 +26,9 @@ export function goBack() {
 }
 
 // Whether user has a valid token
-export const isAuthenticated = writable<boolean>(true);
+export const isAuthenticated = writable<boolean>(false);
 
-export const driverProfile = writable<any>({
-  name: "كابتن محمد",
-  phoneNumber: "+964 780 000 0000",
-  carBrand: "تويوتا",
-  carModel: "كامري 2024",
-  carLicensePlate: "12345 أ",
-  comfortScore: 4.8
-});
+export const driverProfile = writable<any>(null);
 
 export async function fetchProfile() {
   try {

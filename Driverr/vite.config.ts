@@ -4,15 +4,16 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [svelte()],
+  appType: 'spa',
   server: {
     proxy: {
-      '/api': {
+      '/marketplace': {
         target: 'https://aqaariq.com',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/api/, '/marketplace/api/v1'),
-      }
+      },
     }
   }
 })
+
 

@@ -8,15 +8,15 @@
   let loadError = '';
   
   const governorates = [
-    { name: 'بغداد', lat: 33.3152, lng: 44.3661 },
-    { name: 'البصرة', lat: 30.5081, lng: 47.7835 },
-    { name: 'أربيل', lat: 36.1901, lng: 44.0090 },
-    { name: 'النجف', lat: 31.9960, lng: 44.3148 },
-    { name: 'كربلاء', lat: 32.6160, lng: 44.0249 },
-    { name: 'السليمانية', lat: 35.5558, lng: 45.4351 },
-    { name: 'دهوك', lat: 36.8679, lng: 42.9489 },
-    { name: 'كركوك', lat: 35.4670, lng: 44.3832 },
-    { name: 'الموصل', lat: 36.3489, lng: 43.1311 }
+    { name: 'بغداد', enName: 'Baghdad', lat: 33.3152, lng: 44.3661 },
+    { name: 'البصرة', enName: 'Basra', lat: 30.5081, lng: 47.7835 },
+    { name: 'أربيل', enName: 'Erbil', lat: 36.1901, lng: 44.0090 },
+    { name: 'النجف', enName: 'Najaf', lat: 31.9960, lng: 44.3148 },
+    { name: 'كربلاء', enName: 'Karbala', lat: 32.6160, lng: 44.0249 },
+    { name: 'السليمانية', enName: 'Sulaymaniyah', lat: 35.5558, lng: 45.4351 },
+    { name: 'دهوك', enName: 'Duhok', lat: 36.8679, lng: 42.9489 },
+    { name: 'كركوك', enName: 'Kirkuk', lat: 35.4670, lng: 44.3832 },
+    { name: 'الموصل', enName: 'Mosul', lat: 36.3489, lng: 43.1311 }
   ];
   
   let newOffer = {
@@ -59,15 +59,19 @@
       return;
     }
     isLoading = true;
+    loadError = '';
     try {
+      const startGov = governorates.find(g => g.name === newOffer.departure);
       const destGov = governorates.find(g => g.name === newOffer.arrival);
+      
       await rideOffersApi.createOffer({
         price: newOffer.price,
-        pickupProvince: newOffer.departure,
-        dropoffProvince: newOffer.arrival,
+        pickupProvince: startGov ? startGov.enName : newOffer.departure,
+        dropoffProvince: destGov ? destGov.enName : newOffer.arrival,
         destinationLatitude: destGov ? destGov.lat : 33.3152,
         destinationLongitude: destGov ? destGov.lng : 44.3661,
-        maxPassengers: newOffer.maxPassengers
+        maxPassengers: newOffer.maxPassengers,
+        oneTripOnly: true
       });
       isCreating = false;
       await loadOffers();
@@ -111,7 +115,9 @@
   }
 
   onMount(() => {
-    loadOffers();
+    if ($isAuthenticated) {
+      loadOffers();
+    }
   });
 </script>
 

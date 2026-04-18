@@ -5,6 +5,10 @@
   import RideOffers from './components/RideOffers.svelte';
   import Requests from './components/Requests.svelte';
   import ActiveTrip from './components/ActiveTrip.svelte';
+  import DriverRegister from './components/DriverRegister.svelte';
+
+  // Check if we are on the standalone driver-register page
+  const isDriverRegisterPage = window.location.pathname === '/driver-register';
 
   // Page titles for the header
   const pageTitles: Record<string, string> = {
@@ -24,8 +28,16 @@
   
   // Define full-screen views (no bottom nav)
   $: isFullScreen = $currentView === 'auth' || $currentView === 'otp' || $currentView === 'register' || $currentView === 'active_trip';
+
+  // Auth Guard: If not authenticated and not on an auth page, go to auth
+  $: if (!$isAuthenticated && $currentView !== 'auth' && $currentView !== 'otp' && $currentView !== 'register') {
+    currentView.set('auth');
+  }
 </script>
 
+{#if isDriverRegisterPage}
+  <DriverRegister />
+{:else}
 <div class="app-shell">
 
   <!-- Top Header (Only if not Auth) -->
@@ -118,6 +130,7 @@
   {/if}
 
 </div>
+{/if}
 
 <style>
   .app-shell {

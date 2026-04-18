@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/marketplace/api/v1';
 
 // During development, you can set VITE_DEV_TOKEN in .env to test without logging in
 let authToken: string | null = import.meta.env.VITE_DEV_TOKEN || null;
@@ -60,17 +60,25 @@ export const authApi = {
       body: JSON.stringify({ phoneNumber, otp }),
     }),
 
-  register: (data: any) =>
-    request<any>('/Auth/driver/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
 };
 
-// 2. My Account
+// 2. My Account & Driver creation
 export const accountApi = {
   getMyAccount: () => 
     request<any>('/Driver/MyAccount', { method: 'GET' }),
+
+  createDriver: (data: {
+    name: string;
+    phoneNumber: string;
+    companyId: string;
+    carModel: string;
+    carBrand: string;
+    carLicensePlate: string;
+  }) =>
+    request<any>('/Driver', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // 3. Ride Offers
@@ -81,8 +89,9 @@ export const rideOffersApi = {
       body: JSON.stringify(offerData),
     }),
     
+  // Backend expects PageNum and PageSize (Capitalized) per your Swagger JSON
   getMyOffers: (pageNum = 1, pageSize = 20) => 
-    request<any>(`/RideOffer/MyOffers?pageNum=${pageNum}&pageSize=${pageSize}`, { method: 'GET' }),
+    request<any>(`/RideOffer/MyOffers?PageNum=${pageNum}&PageSize=${pageSize}`, { method: 'GET' }),
     
   pollOfferStatus: (rideOfferId: string) => 
     request<any>(`/RideOffer/${rideOfferId}/Status`, { method: 'GET' }),
