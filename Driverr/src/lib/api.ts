@@ -48,13 +48,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // 1. Authentication
 export const authApi = {
-  requestOtp: (phoneNumber: string) => 
+  requestOtp: (phoneNumber: string) =>
     request<any>('/Auth/driver/request-otp', {
       method: 'POST',
       body: JSON.stringify({ phoneNumber }),
     }),
-    
-  verifyOtp: (phoneNumber: string, otp: string) => 
+
+  verifyOtp: (phoneNumber: string, otp: string) =>
     request<any>('/Auth/driver/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ phoneNumber, otp }),
@@ -64,7 +64,7 @@ export const authApi = {
 
 // 2. My Account & Driver creation
 export const accountApi = {
-  getMyAccount: () => 
+  getMyAccount: () =>
     request<any>('/Driver/MyAccount', { method: 'GET' }),
 
   createDriver: (data: {
@@ -83,43 +83,43 @@ export const accountApi = {
 
 // 3. Ride Offers
 export const rideOffersApi = {
-  createOffer: (offerData: any) => 
+  createOffer: (offerData: any) =>
     request<any>('/RideOffer', {
       method: 'POST',
       body: JSON.stringify(offerData),
     }),
-    
+
   // Backend expects PageNum and PageSize (Capitalized) per your Swagger JSON
-  getMyOffers: (pageNum = 1, pageSize = 20) => 
+  getMyOffers: (pageNum = 1, pageSize = 20) =>
     request<any>(`/RideOffer/MyOffers?PageNum=${pageNum}&PageSize=${pageSize}`, { method: 'GET' }),
-    
-  pollOfferStatus: (rideOfferId: string) => 
+
+  pollOfferStatus: (rideOfferId: string) =>
     request<any>(`/RideOffer/${rideOfferId}/Status`, { method: 'GET' }),
-    
-  searchAll: (params: string) => 
+
+  searchAll: (params: string) =>
     request<any>(`/RideOffer/Search?${params}`, { method: 'GET' }),
-    
-  cancelOffer: (rideOfferId: string) => 
+
+  cancelOffer: (rideOfferId: string) =>
     request<any>(`/RideOffer/${rideOfferId}`, { method: 'DELETE' }),
 };
 
 // 4. Rides
 export const ridesApi = {
-  getPendingRequests: (rideOfferId: string) => 
+  getPendingRequests: (rideOfferId: string) =>
     request<any>(`/Ride/offer/${rideOfferId}/pending`, { method: 'GET' }),
-    
-  acceptRequest: (rideId: string) => 
+
+  acceptRequest: (rideId: string) =>
     request<any>(`/Ride/${rideId}/accept`, { method: 'POST' }),
-    
-  declineRequest: (rideId: string) => 
+
+  declineRequest: (rideId: string) =>
     request<any>(`/Ride/${rideId}/decline`, { method: 'POST' }),
-    
-  startPickup: (rideId: string) => 
+
+  startPickup: (rideId: string) =>
     request<any>(`/Ride/${rideId}/pickup`, { method: 'POST' }),
-    
-  markArrived: (rideId: string) => 
+
+  markArrived: (rideId: string) =>
     request<any>(`/Ride/${rideId}/arrived`, { method: 'POST' }),
-    
-  completeTrip: (rideId: string) => 
+
+  completeTrip: (rideId: string) =>
     request<any>(`/Ride/${rideId}/complete`, { method: 'POST' }),
 };

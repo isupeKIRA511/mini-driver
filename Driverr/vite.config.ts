@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [svelte()],
   appType: 'spa',
   server: {
+    port: 5175,
+    strictPort: true,
     proxy: {
       '/marketplace': {
         target: 'https://aqaariq.com',
