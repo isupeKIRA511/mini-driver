@@ -1,136 +1,214 @@
 <script lang="ts">
-  import { currentView, navigate, goBack, navHistory, isAuthenticated } from './stores/appStore';
-  import Auth from './components/Auth.svelte';
-  import Profile from './components/Profile.svelte';
-  import RideOffers from './components/RideOffers.svelte';
-  import Requests from './components/Requests.svelte';
-  import ActiveTrip from './components/ActiveTrip.svelte';
-  import DriverRegister from './components/DriverRegister.svelte';
+  import {
+    currentView,
+    navigate,
+    goBack,
+    navHistory,
+    isAuthenticated,
+  } from "./stores/appStore";
+  import Auth from "./components/Auth.svelte";
+  import Profile from "./components/Profile.svelte";
+  import RideOffers from "./components/RideOffers.svelte";
+  import Requests from "./components/Requests.svelte";
+  import ActiveTrip from "./components/ActiveTrip.svelte";
 
-  // Check if we are on the standalone driver-register page
-  const isDriverRegisterPage = window.location.pathname === '/driver-register';
+
 
   // Page titles for the header
   const pageTitles: Record<string, string> = {
-    auth:         'تسجيل الدخول',
-    otp:          'رمز التحقق',
-    register:     'بيانات السائق',
-    offers:       'عروضي',
-    create_offer: 'إنشاء رحلة',
-    requests:     'الطلبات',
-    active_trip:  'الرحلة النشطة',
-    profile:      'حسابي',
+    auth: "تسجيل الدخول",
+    otp: "رمز التحقق",
+    offers: "عروضي",
+    create_offer: "إنشاء رحلة",
+    requests: "الطلبات",
+    active_trip: "الرحلة النشطة",
+    profile: "حسابي",
   };
 
-  $: pageTitle = pageTitles[$currentView] ?? 'تطبيق السائق';
+  $: pageTitle = pageTitles[$currentView] ?? "تطبيق السائق";
   // Only show back button if we're not on the root auth pages and have history
-  $: showBack = $navHistory.length > 1 && $currentView !== 'offers' && $currentView !== 'auth';
-  
+  $: showBack =
+    $navHistory.length > 1 &&
+    $currentView !== "offers" &&
+    $currentView !== "auth";
+
   // Define full-screen views (no bottom nav)
-  $: isFullScreen = $currentView === 'auth' || $currentView === 'otp' || $currentView === 'register' || $currentView === 'active_trip';
+  $: isFullScreen =
+    $currentView === "auth" ||
+    $currentView === "otp" ||
+    $currentView === "active_trip";
 
   // Auth Guard: If not authenticated and not on an auth page, go to auth
-  $: if (!$isAuthenticated && $currentView !== 'auth' && $currentView !== 'otp' && $currentView !== 'register') {
-    currentView.set('auth');
+  $: if (
+    !$isAuthenticated &&
+    $currentView !== "auth" &&
+    $currentView !== "otp"
+  ) {
+    currentView.set("auth");
   }
 </script>
 
-{#if isDriverRegisterPage}
-  <DriverRegister />
-{:else}
 <div class="app-shell">
-
-  <!-- Top Header (Only if not Auth) -->
-  {#if $currentView !== 'auth' && $currentView !== 'otp'}
-  <header class="top-header">
-    <div class="header-start">
-      {#if showBack}
-        <button class="back-btn" on:click={goBack} aria-label="عودة">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-      {:else}
-        <div class="header-logo">
-          <div class="logo-dot"></div>
-          <span>TransPay</span>
+    <!-- Top Header (Only if not Auth) -->
+    {#if $currentView !== "auth" && $currentView !== "otp"}
+      <header class="top-header">
+        <div class="header-start">
+          {#if showBack}
+            <button class="back-btn" on:click={goBack} aria-label="عودة">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          {:else}
+            <div class="header-logo">
+              <div class="logo-dot"></div>
+              <span>TransPay</span>
+            </div>
+          {/if}
         </div>
-      {/if}
-    </div>
 
-    <h1 class="page-title">{pageTitle}</h1>
+        <h1 class="page-title">{pageTitle}</h1>
 
-    <div class="header-end">
-      <div class="header-badge">
-        <span class="live-dot"></span>
-        مباشر
-      </div>
-    </div>
-  </header>
-  {/if}
-
-  <!-- Main Content -->
-  <main class="view-content" class:no-padding={isFullScreen}>
-    {#if $currentView === 'auth' || $currentView === 'otp' || $currentView === 'register'}
-      <Auth />
-    {:else if $currentView === 'profile'}
-      <Profile />
-    {:else if $currentView === 'offers' || $currentView === 'create_offer'}
-      <RideOffers />
-    {:else if $currentView === 'requests'}
-      <Requests />
-    {:else if $currentView === 'active_trip'}
-      <ActiveTrip />
+        <div class="header-end">
+          <div class="header-badge">
+            <span class="live-dot"></span>
+            مباشر
+          </div>
+        </div>
+      </header>
     {/if}
-  </main>
 
-  <!-- Bottom Navigation -->
-  {#if !isFullScreen && $isAuthenticated}
-  <nav class="bottom-nav">
-    <button class="nav-item" class:active={$currentView === 'offers' || $currentView === 'create_offer'} on:click={() => navigate('offers')}>
-      <div class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="1" y="3" width="15" height="13" rx="2"/>
-          <path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-      </div>
-      <span>رحلاتي</span>
-    </button>
+    <!-- Main Content -->
+    <main class="view-content" class:no-padding={isFullScreen}>
+      {#if $currentView === "auth" || $currentView === "otp"}
+        <Auth />
+      {:else if $currentView === "profile"}
+        <Profile />
+      {:else if $currentView === "offers" || $currentView === "create_offer"}
+        <RideOffers />
+      {:else if $currentView === "requests"}
+        <Requests />
+      {:else if $currentView === "active_trip"}
+        <ActiveTrip />
+      {/if}
+    </main>
 
-    <button class="nav-item" class:active={$currentView === 'requests'} on:click={() => navigate('requests')}>
-      <div class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      </div>
-      <span>الطلبات</span>
-    </button>
+    <!-- Bottom Navigation -->
+    {#if !isFullScreen && $isAuthenticated}
+      <nav class="bottom-nav">
+        <button
+          class="nav-item"
+          class:active={$currentView === "offers" ||
+            $currentView === "create_offer"}
+          on:click={() => navigate("offers")}
+        >
+          <div class="nav-icon">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="1" y="3" width="15" height="13" rx="2" />
+              <path d="M16 8h4l3 5v3h-7V8z" /><circle
+                cx="5.5"
+                cy="18.5"
+                r="2.5"
+              /><circle cx="18.5" cy="18.5" r="2.5" />
+            </svg>
+          </div>
+          <span>رحلاتي</span>
+        </button>
 
-    <button class="nav-item nav-center-btn" class:active={$currentView === 'active_trip'} on:click={() => navigate('active_trip')}>
-      <div class="nav-icon nav-center-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
-        </svg>
-      </div>
-      <span>رحلتي</span>
-    </button>
+        <button
+          class="nav-item"
+          class:active={$currentView === "requests"}
+          on:click={() => navigate("requests")}
+        >
+          <div class="nav-icon">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          <span>الطلبات</span>
+        </button>
 
-    <button class="nav-item" class:active={$currentView === 'profile'} on:click={() => navigate('profile')}>
-      <div class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </div>
-      <span>حسابي</span>
-    </button>
-  </nav>
-  {/if}
+        <button
+          class="nav-item nav-center-btn"
+          class:active={$currentView === "active_trip"}
+          on:click={() => navigate("active_trip")}
+        >
+          <div class="nav-icon nav-center-icon">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polygon
+                points="10 8 16 12 10 16 10 8"
+                fill="currentColor"
+                stroke="none"
+              />
+            </svg>
+          </div>
+          <span>رحلتي</span>
+        </button>
 
-</div>
-{/if}
+        <button
+          class="nav-item"
+          class:active={$currentView === "profile"}
+          on:click={() => navigate("profile")}
+        >
+          <div class="nav-icon">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <span>حسابي</span>
+        </button>
+      </nav>
+    {/if}
+  </div>
+
 
 <style>
   .app-shell {
@@ -151,7 +229,7 @@
     padding: 12px 16px;
     background: #ffffff;
     border-bottom: 1px solid var(--bg-tertiary);
-    box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -214,7 +292,11 @@
   .logo-dot {
     width: 26px;
     height: 26px;
-    background: linear-gradient(135deg, var(--primary-container), var(--primary));
+    background: linear-gradient(
+      135deg,
+      var(--primary-container),
+      var(--primary)
+    );
     border-radius: 7px;
     box-shadow: 0 3px 8px rgba(250, 196, 69, 0.4);
   }
@@ -242,8 +324,15 @@
   }
 
   @keyframes livePulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.5; transform: scale(0.85); }
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.85);
+    }
   }
 
   /* ── Content Area ── */
@@ -269,7 +358,7 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     position: absolute;
     bottom: 14px;
     left: 14px;

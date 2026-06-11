@@ -1,0 +1,4 @@
+- [ ] تعديل ActiveTrip.svelte:
+  - [ ] إضافة زر “إلغاء الرحلة” واستدعاء `rideOffersApi.cancelOffer($currentActiveRide.rideOfferId)`
+  - [ ] تحديث الحالة محلياً: `$currentActiveRide = null` و `$currentView = 'offers'`
+  - [ ] جعل زر الاتصال يفتح الاتصال عبر tel:+<رقم> باستخدام رقم من `currentActiveRide` (fallback للحقول المتاحة)

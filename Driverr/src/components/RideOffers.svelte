@@ -8,6 +8,7 @@
   let loadError = "";
 
   let editingOfferId: string | null = null;
+  let locallyCreatedOffers: any[] = [];
   // جميع المحافظات العراقية مع أسماء إنجليزية للربط مع الـ backend
   const governorates = [
     { name: "بغداد", enName: "Baghdad", lat: 33.3152, lng: 44.3661 },
@@ -30,41 +31,46 @@
     { name: "المثنى", enName: "Muthanna", lat: 31.93, lng: 45.1028 },
   ];
 
-  // قائمة المطارات مع أسماء إنجليزية للاستخدام عند إرسال البيانات للـ backend
+  // قائمة المطارات مع أسماء إنجليزية والمحافظة التابعة لها
   const airports = [
     {
       name: "مطار بغداد الدولي",
       enName: "Baghdad International Airport",
+      province: "Baghdad",
       lat: 33.2735,
       lng: 44.2345,
     },
     {
       name: "مطار أربيل الدولي",
       enName: "Erbil International Airport",
+      province: "Erbil",
       lat: 36.1911,
       lng: 43.9936,
     },
     {
       name: "مطار البصرة الدولي",
       enName: "Basra International Airport",
+      province: "Basra",
       lat: 30.505,
       lng: 47.78,
     },
     {
       name: "مطار النجف الأشرف",
       enName: "Najaf International Airport",
+      province: "Najaf",
       lat: 31.9903,
       lng: 44.3886,
     },
     {
       name: "مطار السليمانية",
       enName: "Sulaimaniyah International Airport",
+      province: "Sulaymaniyah",
       lat: 35.5606,
       lng: 45.4032,
     },
-    { name: "مطار الموصل", enName: "Mosul Airport", lat: 36.349, lng: 43.145 },
-    { name: "مطار دهوك", enName: "Duhok Airport", lat: 36.869, lng: 42.988 },
-    { name: "مطار كركوك", enName: "Kirkuk Airport", lat: 35.465, lng: 44.401 },
+    { name: "مطار الموصل", enName: "Mosul Airport", province: "Nineveh", lat: 36.349, lng: 43.145 },
+    { name: "مطار دهوك", enName: "Duhok Airport", province: "Duhok", lat: 36.869, lng: 42.988 },
+    { name: "مطار كركوك", enName: "Kirkuk Airport", province: "Kirkuk", lat: 35.465, lng: 44.401 },
   ];
 
   let newOffer = {
@@ -88,6 +94,40 @@
     if (newOffer.maxPassengers > 1) newOffer.maxPassengers--;
   }
 
+  function offerId(offer: any) {
+    return offer?.id || offer?.rideOfferId || offer?.ride_offer_id || offer?.rideOfferID;
+  }
+
+  function extractOfferArray(res: any) {
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    if (Array.isArray(res?.data?.items)) return res.data.items;
+    if (Array.isArray(res?.items)) return res.items;
+    if (Array.isArray(res)) return res;
+    return [];
+  }
+
+  function visibleOffers(offers: any[]) {
+    return offers.filter(
+      (o: any) => o.status !== "DriverCancelled" && o.status !== "Completed",
+    );
+  }
+
+  function mergeWithLocalOffers(serverOffers: any[]) {
+    const merged = [...visibleOffers(serverOffers)];
+    const seen = new Set(merged.map(offerId).filter(Boolean));
+
+    for (const offer of locallyCreatedOffers) {
+      const id = offerId(offer);
+      if (!id || seen.has(id)) continue;
+      if (offer.status === "DriverCancelled" || offer.status === "Completed") continue;
+      merged.unshift(offer);
+      seen.add(id);
+    }
+
+    return merged;
+  }
+
   async function loadOffers() {
     // لا تنادي الـ API إذا لم يكن المستخدم مسجلاً
     if (!$isAuthenticated) {
@@ -98,7 +138,7 @@
     loadError = "";
     try {
       const res = await rideOffersApi.getMyOffers();
-      $rideOffers = res?.data ?? [];
+      $rideOffers = mergeWithLocalOffers(extractOfferArray(res));
     } catch (e: any) {
       loadError = e.message || "تعذر تحميل الرحلات";
     } finally {
@@ -117,20 +157,16 @@
       // تحديد الإحداثيات ونصوص نقطة الانطلاق والوصول بناءً على نوع الرحلة
       let destLat = 33.3152;
       let destLng = 44.3661;
-      let pickupProvince = newOffer.departure;
-      let dropoffProvince = newOffer.arrival;
-
-      // If user clicked on map and provided precise coords, prefer them
-      // إذا كانت هناك إحداثيات محددة (من مصدر خارجي)، يمكن تفضيلها
-      const explicitLat = (newOffer as any).destinationLatitude;
-      const explicitLng = (newOffer as any).destinationLongitude;
+      let pickupProvince = "";
+      let dropoffProvince = "";
 
       // Helper: map displayed Arabic name to backend-friendly name (prefer enName when available)
       function mapToBackendName(displayName: string) {
         const ap = airports.find(
           (a) => a.name === displayName || a.enName === displayName,
         );
-        if (ap) return ap.enName || ap.name;
+        if (ap) return ap.province || ap.enName || ap.name;
+        
         const gov = governorates.find(
           (g) => g.name === displayName || g.enName === displayName,
         );
@@ -146,36 +182,30 @@
         const gov = governorates.find(
           (g) => g.name === newOffer.arrival || g.enName === newOffer.arrival,
         );
-        destLat = gov ? gov.lat : ap ? ap.lat : destLat;
-        destLng = gov ? gov.lng : ap ? ap.lng : destLng;
-        // send backend-friendly names
-        pickupProvince = ap
-          ? mapToBackendName(ap.name)
-          : mapToBackendName(pickupProvince);
+        destLat = gov ? gov.lat : destLat;
+        destLng = gov ? gov.lng : destLng;
+        
+        pickupProvince = ap ? ap.province : "Baghdad";
         dropoffProvince = mapToBackendName(newOffer.arrival);
       } else if (newOffer.tripType === "to_airport") {
         // من المنزل إلى المطار
         const ap = airports.find(
           (a) => a.name === newOffer.airport || a.enName === newOffer.airport,
         );
-        const gov = governorates.find(
-          (g) =>
-            g.name === newOffer.departure || g.enName === newOffer.departure,
-        );
         destLat = ap ? ap.lat : destLat;
         destLng = ap ? ap.lng : destLng;
+        
         pickupProvince = mapToBackendName(newOffer.departure);
-        dropoffProvince = ap
-          ? mapToBackendName(ap.name)
-          : mapToBackendName(dropoffProvince);
+        dropoffProvince = ap ? ap.province : "Baghdad";
       } else {
-        const gov = governorates.find(
+        pickupProvince = mapToBackendName(newOffer.departure);
+        dropoffProvince = mapToBackendName(newOffer.arrival);
+        
+        const govEnd = governorates.find(
           (g) => g.name === newOffer.arrival || g.enName === newOffer.arrival,
         );
-        destLat = gov ? gov.lat : destLat;
-        destLng = gov ? gov.lng : destLng;
-        pickupProvince = mapToBackendName(pickupProvince);
-        dropoffProvince = mapToBackendName(dropoffProvince);
+        destLat = govEnd ? govEnd.lat : destLat;
+        destLng = govEnd ? govEnd.lng : destLng;
       }
 
       // Build a clean payload with proper numeric types
@@ -186,15 +216,20 @@
         destinationLatitude: Number(destLat) || 0,
         destinationLongitude: Number(destLng) || 0,
         maxPassengers: parseInt(String(newOffer.maxPassengers), 10) || 1,
-        // رحلات المطار => oneTripOnly = true ؛ بين المحافظات => false
-        oneTripOnly: newOffer.tripType === "between" ? false : true,
+        oneTripOnly: newOffer.tripType !== "between",
       };
 
-      // DEBUG: show exact payload sent to backend (temporary)
       console.debug("[RideOffers] creating offer payload:", payload);
       const createRes = await rideOffersApi.createOffer(payload);
-      console.debug("[RideOffers] createOffer response:", createRes);
-      // إذا كنا نعدّل رحلة موجودة، نلغي الرحلة القديمة بعد إنشاء الجديدة بنجاح
+      const createdOffer = createRes?.data || createRes;
+      if (createdOffer && typeof createdOffer === "object" && offerId(createdOffer)) {
+        locallyCreatedOffers = [
+          { passengersCount: 0, status: "AwaitingPassengers", ...payload, ...createdOffer },
+          ...locallyCreatedOffers,
+        ];
+      }
+      
+      // إذا كنا نعدّل رحلة موجودة، نلغي الرحلة القديمة
       if (editingOfferId) {
         try {
           await rideOffersApi.cancelOffer(editingOfferId);
@@ -387,6 +422,9 @@
 
   {#if isCreating}
     <div class="create-form card animate-fade">
+      {#if loadError}
+        <div class="error-banner">{loadError}</div>
+      {/if}
       <!-- Trip type selector -->
       <div class="trip-type-segment">
         <button
@@ -690,6 +728,18 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-4);
+  }
+
+  .error-banner {
+    background-color: rgba(186, 26, 26, 0.1);
+    color: var(--danger);
+    padding: var(--spacing-3);
+    border-radius: var(--border-radius-md);
+    border: 1px solid rgba(186, 26, 26, 0.2);
+    margin-bottom: var(--spacing-4);
+    font-size: 0.9rem;
+    text-align: center;
+    font-weight: 500;
   }
 
   .btn-create {

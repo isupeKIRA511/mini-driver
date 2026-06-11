@@ -2,36 +2,44 @@
 
 :root {
   /* === BRAND COLORS (matched from mini-taxies) === */
-  --primary:            #FAC445;  /* Golden Yellow - main brand */
-  --primary-dark:       #e8ae30;  /* Golden hover state */
-  --primary-container:  #FFD54F;  /* Light gold - gradients */
-  --on-primary:         #1D1B1C;  /* Dark text ON yellow buttons */
+  --primary: #FAC445;
+  /* Golden Yellow - main brand */
+  --primary-dark: #e8ae30;
+  /* Golden hover state */
+  --primary-container: #FFD54F;
+  /* Light gold - gradients */
+  --on-primary: #1D1B1C;
+  /* Dark text ON yellow buttons */
   --on-primary-container: #312B1B;
 
   /* === DARK MODE LAYER BACKGROUNDS (Now LIGHT MODE) === */
-  --bg-primary:   #fef8f9;  /* Light background */
-  --bg-secondary: #ffffff;  /* Cards, elevated surfaces */
-  --bg-tertiary:  #f3eced;  /* Borders, dividers, hover */
+  --bg-primary: #fef8f9;
+  /* Light background */
+  --bg-secondary: #ffffff;
+  /* Cards, elevated surfaces */
+  --bg-tertiary: #f3eced;
+  /* Borders, dividers, hover */
 
   /* === TEXT HIERARCHY === */
-  --text-primary:   #1D1B1C;
+  --text-primary: #1D1B1C;
   --text-secondary: #4f4635;
-  --text-muted:     #817662;
+  --text-muted: #817662;
 
   /* === ACCENT === */
   --accent-primary: #FAC445;
-  --accent-hover:   #e8ae30;
+  --accent-hover: #e8ae30;
 
   /* === SEMANTIC COLORS === */
-  --success:      #10b981;
-  --warning:      #f59e0b;
-  --danger:       #ba1a1a;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ba1a1a;
   --danger-hover: #93000a;
 
   /* === SHADOWS & GLOWS === */
-  --box-shadow:       0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --box-shadow-glow:  0 0 15px rgba(250, 196, 69, 0.3);   /* YELLOW glow */
-  --focus-ring:       0 0 0 2px rgba(250, 196, 69, 0.25);
+  --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --box-shadow-glow: 0 0 15px rgba(250, 196, 69, 0.3);
+  /* YELLOW glow */
+  --focus-ring: 0 0 0 2px rgba(250, 196, 69, 0.25);
 
   /* === TYPOGRAPHY === */
   --font-family: 'Inter', sans-serif;
@@ -55,7 +63,9 @@
 /* ============================================================
    RESET
    ============================================================ */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -66,7 +76,8 @@
    ============================================================ */
 body {
   font-family: var(--font-family);
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); /* Premium dark site background */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  /* Premium dark site background */
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -74,23 +85,27 @@ body {
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center; /* Center horizontally */
+  justify-content: center;
+  /* Center horizontally */
   direction: rtl;
 }
 
 #app {
   width: 100%;
-  max-width: 500px; /* Slightly wider */
-  height: 95vh; /* Slightly taller */
+  max-width: 500px;
+  /* Slightly wider */
+  height: 95vh;
+  /* Slightly taller */
   max-height: 1000px;
   background-color: var(--bg-primary);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: 40px; 
+  border-radius: 40px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  border: 10px solid rgba(255, 255, 255, 0.08); /* Slightly thicker premium frame */
+  border: 10px solid rgba(255, 255, 255, 0.08);
+  /* Slightly thicker premium frame */
 }
 
 /* Ensure content fills app correctly */
@@ -371,6 +386,7 @@ p {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -378,9 +394,20 @@ p {
 }
 
 @keyframes pulse {
-  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(250, 196, 69, 0.7); }
-  70%  { transform: scale(1);    box-shadow: 0 0 0 8px rgba(250, 196, 69, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(250, 196, 69, 0); }
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(250, 196, 69, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(250, 196, 69, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(250, 196, 69, 0);
+  }
 }
 
 .animate-fade {
@@ -393,9 +420,11 @@ p {
 ::-webkit-scrollbar {
   width: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--bg-tertiary);
   border-radius: 2px;

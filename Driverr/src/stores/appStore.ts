@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { accountApi } from '../lib/api';
 
-export type AppView = 'auth' | 'otp' | 'register' | 'offers' | 'create_offer' | 'requests' | 'active_trip' | 'profile';
+export type AppView = 'auth' | 'otp' | 'offers' | 'create_offer' | 'requests' | 'active_trip' | 'profile';
 
 // Navigation history stack for back button
 export const navHistory = writable<AppView[]>(['auth']);

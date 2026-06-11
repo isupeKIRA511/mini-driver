@@ -59,14 +59,9 @@
         if (token) {
           setToken(token);
           // Check if profile exists
-          const profile = await fetchProfile();
-          if (profile && profile.name) {
-            $isAuthenticated = true;
-            $currentView = 'offers';
-          } else {
-            // New driver? Go to registration
-            $currentView = 'register';
-          }
+          await fetchProfile();
+          $isAuthenticated = true;
+          $currentView = 'offers';
         }
       } catch (err: any) {
         errorMessage = err.message || 'رمز التحقق غير صحيح';
@@ -76,45 +71,6 @@
     }
   }
 
-  function isRegistrationValid() {
-    return (
-      driverName.trim().length >= 3 &&
-      driverCompanyId.trim().length >= 5 &&
-      driverCarModel.trim().length >= 1 &&
-      driverCarBrand.trim().length >= 1 &&
-      driverCarLicensePlate.trim().length >= 2
-    );
-  }
-
-  async function completeRegistration() {
-    if (!isRegistrationValid()) {
-      errorMessage = 'يرجى تعبئة جميع الحقول بشكل صحيح';
-      return;
-    }
-    isLoading = true;
-    errorMessage = '';
-    try {
-      await accountApi.createDriver({
-        name: driverName.trim(),
-        phoneNumber: $phoneNumber,
-        companyId: driverCompanyId.trim(),
-        carModel: driverCarModel.trim(),
-        carBrand: driverCarBrand.trim(),
-        carLicensePlate: driverCarLicensePlate.trim(),
-      });
-
-      // Fetch the fresh profile to confirm successful registration
-      await fetchProfile();
-      
-      $isAuthenticated = true;
-      $currentView = 'offers';
-    } catch (err: any) {
-      errorMessage = err.message || 'تعذر استكمال التسجيل';
-    } finally {
-      isLoading = false;
-    }
-  }
-  
   function handleOtpInput(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
     let val = target.value;
@@ -225,101 +181,6 @@
     <div class="action-footer">
       <button class="btn btn-primary" on:click={verifyCode} disabled={otpInputs.join('').length < 6 || isLoading}>
         {isLoading ? 'جاري التحقق...' : 'تحقق وتسجيل الدخول'}
-      </button>
-    </div>
-
-  {:else if $currentView === 'register'}
-    <!-- New Driver Registration -->
-    <div class="auth-header" style="margin-bottom: var(--spacing-5);">
-      <div class="logo-placeholder">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h10"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-      </div>
-      <h1>تسجيل بيانات السائق</h1>
-      <p>أكمل ملفك الشخصي لبدء استلام الطلبات</p>
-    </div>
-
-    <div class="register-form">
-      <div class="form-group">
-        <label for="regName">الاسم الكامل</label>
-        <input 
-          id="regName"
-          type="text" 
-          bind:value={driverName}
-          placeholder="مثال: محمد علي"
-          class="input-field"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="regPhone">رقم الهاتف</label>
-        <input 
-          id="regPhone"
-          type="text" 
-          value={$phoneNumber}
-          disabled
-          class="input-field"
-          style="background-color: var(--bg-tertiary); color: var(--text-muted);"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="regCompanyId">معرّف الشركة (Company ID)</label>
-        <input 
-          id="regCompanyId"
-          type="text"
-          dir="ltr"
-          bind:value={driverCompanyId}
-          placeholder="3fa85f64-5717-4562-b3fc-2c963f66afa6"
-          class="input-field"
-        />
-      </div>
-
-      <div class="reg-row">
-        <div class="form-group">
-          <label for="regCarBrand">ماركة السيارة</label>
-          <input 
-            id="regCarBrand"
-            type="text"
-            bind:value={driverCarBrand}
-            placeholder="مثال: Toyota"
-            class="input-field"
-          />
-        </div>
-        <div class="form-group">
-          <label for="regCarModel">موديل السيارة</label>
-          <input 
-            id="regCarModel"
-            type="text"
-            bind:value={driverCarModel}
-            placeholder="مثال: Camry"
-            class="input-field"
-          />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="regPlate">رقم اللوحة</label>
-        <input 
-          id="regPlate"
-          type="text"
-          dir="ltr"
-          bind:value={driverCarLicensePlate}
-          placeholder="مثال: 12 A 34567"
-          class="input-field"
-        />
-      </div>
-
-      {#if errorMessage}
-        <p class="error-msg" style="text-align: center;">{errorMessage}</p>
-      {/if}
-    </div>
-
-    <div class="action-footer">
-      <button class="btn btn-primary" on:click={completeRegistration} disabled={!isRegistrationValid() || isLoading}>
-        {isLoading ? 'جاري الحفظ...' : 'ابدأ العمل الآن'}
-        {#if !isLoading}
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        {/if}
       </button>
     </div>
   {/if}

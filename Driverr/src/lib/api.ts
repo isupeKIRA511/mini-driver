@@ -30,7 +30,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   // Safe JSON parse — avoids crash when server returns HTML (e.g. 404 page)
   let data: any = null;
   const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
+  if (contentType.includes('json')) {
     try {
       data = await response.json();
     } catch {
@@ -39,8 +39,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!response.ok) {
-    const msg = data?.message || data?.error || `خطأ ${response.status}: ${response.statusText}`;
+    let msg = `خطأ ${response.status}: ${response.statusText}`;
+    if (data) {
+      if (typeof data.errors === 'object') {
+        // Handle ASP.NET Core validation errors
+        const details = Object.values(data.errors).flat().join(', ');
+        msg = `${data.title || 'خطأ في التحقق'}: ${details}`;
+      } else {
+        msg = data.message || data.error || data.title || msg;
+      }
+    }
     throw new Error(msg);
+  }
+
+  // Check for business-level failure if the API returns a success flag
+  if (data && typeof data === 'object' && data.success === false) {
+    throw new Error(data.message || 'حدث خطأ في العملية');
   }
 
   return data;
@@ -89,8 +103,8 @@ export const rideOffersApi = {
       body: JSON.stringify(offerData),
     }),
 
-  // Backend expects PageNum and PageSize (Capitalized) per your Swagger JSON
-  getMyOffers: (pageNum = 1, pageSize = 20) =>
+  // Backend expects PageNum and PageSize (Capitalized) as per previous working state
+  getMyOffers: (pageNum = 1, pageSize = 100) =>
     request<any>(`/RideOffer/MyOffers?PageNum=${pageNum}&PageSize=${pageSize}`, { method: 'GET' }),
 
   pollOfferStatus: (rideOfferId: string) =>

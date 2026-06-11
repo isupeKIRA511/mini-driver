@@ -4,10 +4,8 @@
     currentView,
     currentActiveRide,
   } from "../stores/appStore";
-  import { ridesApi } from "../lib/api";
+  import { ridesApi, rideOffersApi } from "../lib/api";
   import { onMount, tick } from "svelte";
-
-  declare var L: any;
 
   let mapElement: HTMLElement;
   let map: any;
@@ -18,6 +16,65 @@
     pickup: $currentActiveRide?.pickupProvince || "بغداد",
     dropoff: $currentActiveRide?.dropoffProvince || "البصرة",
   };
+
+
+  function getCallNumber() {
+    // حسب الدوك: RideModel فيه driverPhoneNumber، لكن الـ UI طلب اتصال "للمستخدم"
+    // سنستخدم أول رقم متوفر بأفضلية: passengerPhone* ثم phoneNumber ثم driverPhoneNumber
+    return (
+      $currentActiveRide?.passengerPhoneNumber ||
+      $currentActiveRide?.passengerPhone ||
+      $currentActiveRide?.phoneNumber ||
+      $currentActiveRide?.driverPhoneNumber ||
+      ""
+    );
+  }
+
+  function formatTelNumber(raw: string) {
+    if (!raw) return "";
+    // إزالة مسافات/رموز غير رقمية مع الاحتفاظ بإشارة +
+    const trimmed = String(raw).trim();
+    const withPlus = trimmed.startsWith("+")
+      ? trimmed
+      : trimmed.replace(/[^\d]/g, "");
+    if (withPlus.startsWith("+"))
+      return "+" + withPlus.slice(1).replace(/[^\d]/g, "");
+    return withPlus;
+  }
+
+  const callNumber = formatTelNumber(getCallNumber());
+
+  async function cancelCurrentTrip() {
+    if (!$currentActiveRide) return;
+
+    const rideOfferId =
+      $currentActiveRide?.rideOfferId ||
+      $currentActiveRide?.ride_offer_id ||
+      $currentActiveRide?.rideOfferID;
+
+    if (!rideOfferId) {
+      alert("لا يمكن إلغاء الرحلة لأن رقم العرض غير متوفر.");
+      return;
+    }
+
+    if (!confirm("هل أنت متأكد من إلغاء الرحلة؟")) return;
+
+    isLoading = true;
+    cancelledByDriver = false;
+    try {
+      await rideOffersApi.cancelOffer(String(rideOfferId));
+
+      // تحديث الحالة: إرجاع المستخدم للعروض
+      cancelledByDriver = true;
+      $currentActiveRide = null;
+      $currentView = "offers";
+    } catch (e) {
+      console.error(e);
+      alert("فشل إلغاء الرحلة. حاول مرة أخرى.");
+    } finally {
+      isLoading = false;
+    }
+  }
 
   async function nextStatus() {
     if (!$currentActiveRide) return;
@@ -158,19 +215,41 @@
         <h4>{tripDetails.passengerName}</h4>
         <span>راكب</span>
       </div>
-      <button class="btn-icon" aria-label="اتصال">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          ><path
-            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-          /></svg
+
+      {#if callNumber}
+        <a class="btn-icon" aria-label="اتصال" href={`tel:${callNumber}`}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            ><path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+            /></svg
+          >
+        </a>
+      {:else}
+        <button
+          class="btn-icon"
+          aria-label="اتصال"
+          disabled
+          title="رقم الهاتف غير متوفر"
         >
-      </button>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            ><path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+            /></svg
+          >
+        </button>
+      {/if}
     </div>
 
     <div class="route-timeline">
@@ -209,28 +288,45 @@
       <div class="progress-fill" style="width: {getProgressWidth()}"></div>
     </div>
 
-    <button
-      class="btn btn-large {$activeTripStatus === 'Completed'
-        ? 'btn-success'
-        : 'btn-primary'}"
-      on:click={handleAction}
-      disabled={isLoading}
-    >
-      {isLoading ? "جاري التحميل..." : getButtonText()}
-      {#if !isLoading}
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          style="transform: scaleX(-1);"><path d="M5 12h14M12 5l7 7-7 7" /></svg
+    <div class="control-actions">
+      {#if $activeTripStatus !== "Completed"}
+        <button
+          class="btn btn-large btn-outline-danger cancel-trip-btn"
+          on:click={cancelCurrentTrip}
+          disabled={isLoading}
         >
+          {isLoading ? "..." : "إلغاء الرحلة"}
+        </button>
       {/if}
-    </button>
+
+      <button
+        class="btn btn-large {$activeTripStatus === 'Completed'
+          ? 'btn-success'
+          : 'btn-primary'}"
+        on:click={handleAction}
+        disabled={isLoading}
+      >
+        {isLoading ? "جاري التحميل..." : getButtonText()}
+        {#if !isLoading}
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="transform: scaleX(-1);"
+            ><path d="M5 12h14M12 5l7 7-7 7" /></svg
+          >
+        {/if}
+      </button>
+    </div>
+
+    {#if isLoading}
+      <div class="mini-hint">جاري التنفيذ...</div>
+    {/if}
   </div>
 </div>
 
@@ -441,6 +537,35 @@
     padding: var(--spacing-4);
     border-top: 1px solid var(--bg-tertiary);
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.05);
+  }
+
+  .control-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cancel-trip-btn {
+    white-space: nowrap;
+    padding: 0 16px;
+  }
+
+  .btn-outline-danger {
+    background: transparent;
+    border: 2px solid var(--danger);
+    color: var(--danger);
+  }
+
+  .btn-outline-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .mini-hint {
+    margin-top: var(--spacing-2);
+    font-size: 0.85rem;
+    color: var(--text-muted);
   }
 
   .progress-bar-wrapper {
